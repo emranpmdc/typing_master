@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typing Master - Speed Test</title>
+    <style>
+        /* CSS Variables for consistent styling */
+        :root {
+            --primary-color: #4a90e2;
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --bg-color: #f4f7f6;
+            --text-dark: #2c3e50;
+            --card-bg: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            max-width: 800px;
+            width: 100%;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        /* Stats Row */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        .stat-box span {
+            display: block;
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-box strong {
+            font-size: 1.4rem;
+            color: var(--text-dark);
+        }
+
+        /* Typing Area */
+        .text-display {
+            background: #fff;
+            border: 2px solid #ddd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 1.25rem;
+            line-height: 1.6;
+            text-align: left;
+            user-select: none;
+            position: relative;
+            min-height: 120px;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        /* Individual character styling */
+        .text-display span {
+            position: relative;
+        }
+
+        .text-display span.correct {
+            color: var(--success-color);
+        }
+
+        .text-display span.incorrect {
+            color: var(--error-color);
+            background: rgba(231, 76, 60, 0.1);
+            text-decoration: underline;
+        }
+
+        .text-display span.active {
+            border-bottom: 3px solid var(--primary-color);
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            50% { border-color: transparent; }
+        }
+
+        .input-field {
+            width: 100%;
+            height: 0;
+            opacity: 0;
+            position: absolute;
+        }
+
+        /* Virtual Textarea Visual */
+        .typing-area-trigger {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            cursor: text;
+            background: #fff;
+            color: #777;
+        }
+
+        /* Results Modal Overlay */
+        #results-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .results-card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .results-card h2 {
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        .restart-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            margin-top: 15px;
+        }
+
+        .restart-btn:hover {
+            background: #357abd;
+            transform: scale(1.05);
+        }
+
+        /* Branding Footer Styling */
+        .branding-footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        .branding-footer strong {
+            color: var(--text-dark);
+        }
+
+        @media (max-width: 600px) {
+            .text-display {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Typing Master</h1>
+
+        <!-- Stats -->
+        <div class="stats-container">
+            <div class="stat-box">
+                <span>Time Left</span>
+                <strong id="timer">60s</strong>
+            </div>
+            <div class="stat-box">
+                <span>WPM</span>
+                <strong id="wpm">0</strong>
+            </div>
+            <div class="stat-box">
+                <span>Accuracy</span>
+                <strong id="accuracy">0%</strong>
+            </div>
+        </div>
+
+        <!-- Text Display -->
+        <div id="text-display" class="text-display">
+            <!-- Words will be injected here via JS -->
+        </div>
+
+        <!-- Hidden input for mobile/keyboard compatibility -->
+        <input type="text" id="input-field" class="input-field" autocomplete="off">
+        
+        <div class="typing-area-trigger" onclick="focusInput()">
+            Click here or start typing...
+        </div>
+
+        <button class="restart-btn" onclick="resetGame()">Restart Test</button>
+
+        <!-- Branding Footer -->
+        <div class="branding-footer">
+            Developed by <strong>Imran Ustad</strong> | 03345501369
+        </div>
+    </div>
+
+    <!-- Results Modal -->
+    <div id="results-overlay">
+        <div class="results-card">
+            <h2>Test Results</h2>
+            <div id="final-stats"></div>
+            <button class="restart-btn" onclick="resetGame()">Try Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const TEST_DURATION = 60;
+        const PARAGRAPH = "The quick brown fox jumps over the lazy dog. Programming is not about what you know; it's about what you can figure out. Consistency is the key to mastering any skill, especially touch typing. Practice every day to improve your speed and accuracy. Focus on the home row and keep your eyes on the screen rather than the keyboard. Speed will follow precision naturally over time. Success is a journey, not a destination, and every keystroke brings you closer to your goal of becoming a typing expert.";
+
+        // State Variables
+        let timeLeft = TEST_DURATION;
+        let timerInterval = null;
+        let isStarted = false;
+        let charIndex = 0;
+        let mistakes = 0;
+
+        // Elements
+        const textDisplay = document.getElementById('text-display');
+        const inputField = document.getElementById('input-field');
+        const timerEl = document.getElementById('timer');
+        const wpmEl = document.getElementById('wpm');
+        const accuracyEl = document.getElementById('accuracy');
+        const resultsOverlay = document.getElementById('results-overlay');
+        const finalStats = document.getElementById('final-stats');
+
+        /**
+         * Initialize/Reset the UI with the text paragraph
+         */
+        function loadParagraph() {
+            textDisplay.innerHTML = "";
+            // Split paragraph into characters and wrap in spans
+            PARAGRAPH.split("").forEach(char => {
+                let span = `<span>${char}</span>`;
+                textDisplay.innerHTML += span;
+            });
+            textDisplay.querySelectorAll('span')[0].classList.add('active');
+        }
+
+        /**
+         * Ensure the hidden input is focused so user can type
+         */
+        function focusInput() {
+            inputField.focus();
+        }
+
+        /**
+         * Handle user input logic
+         */
+        function handleInput(e) {
+            const characters = textDisplay.querySelectorAll('span');
+            let typedChar = inputField.value.split("")[charIndex];
+
+            // Start timer on first keystroke
+            if (!isStarted && inputField.value.length > 0) {
+                startTimer();
+                isStarted = true;
+            }
+
+            if (typedChar == null) {
+                // Handle Backspace
+                if (charIndex > 0) {
+                    charIndex--;
+                    if (characters[charIndex].classList.contains('incorrect')) {
+                        mistakes--;
+                    }
+                    characters[charIndex].classList.remove('correct', 'incorrect');
+                }
+            } else {
+                // Check if character is correct
+                if (characters[charIndex].innerText === typedChar) {
+                    characters[charIndex].classList.add('correct');
+                } else {
+                    mistakes++;
+                    characters[charIndex].classList.add('incorrect');
+                }
+                charIndex++;
+            }
+
+            // Update Active Cursor
+            characters.forEach(span => span.classList.remove('active'));
+            if (charIndex < characters.length) {
+                characters[charIndex].classList.add('active');
+            }
+
+            updateLiveStats();
+
+            // End if user finishes the whole paragraph before time
+            if (charIndex === characters.length) {
+                endGame();
+            }
+        }
+
+        /**
+         * Calculate and update stats on screen
+         */
+        function updateLiveStats() {
+            let wpm = Math.round(((charIndex - mistakes) / 5) / ((TEST_DURATION - timeLeft) / 60));
+            wpm = wpm < 0 || !wpm || wpm === Infinity ? 0 : wpm;
+            
+            let accuracy = charIndex > 0 ? Math.round(((charIndex - mistakes) / charIndex) * 100) : 0;
+            
+            wpmEl.innerText = wpm;
+            accuracyEl.innerText = accuracy + "%";
+        }
+
+        /**
+         * Countdown timer logic
+         */
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    timerEl.innerText = timeLeft + "s";
+                    updateLiveStats();
+                } else {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        /**
+         * End game and show results
+         */
+        function endGame() {
+            clearInterval(timerInterval);
+            inputField.disabled = true;
+            
+            // Final Calcs
+            let wpm = Math.round(((charIndex - mistakes) / 5) / (TEST_DURATION / 60));
+            let accuracy = charIndex > 0 ? Math.round(((charIndex - mistakes) / charIndex) * 100) : 0;
+
+            finalStats.innerHTML = `
+                <div style="margin: 20px 0; font-size: 1.1rem; line-height: 2;">
+                    <p><strong>WPM:</strong> ${wpm}</p>
+                    <p><strong>Accuracy:</strong> ${accuracy}%</p>
+                    <p><strong>Characters Typed:</strong> ${charIndex}</p>
+                    <p><strong>Errors:</strong> ${mistakes}</p>
+                </div>
+            `;
+            resultsOverlay.style.display = 'flex';
+        }
+
+        /**
+         * Reset everything to initial state
+         */
+        function resetGame() {
+            loadParagraph();
+            clearInterval(timerInterval);
+            timeLeft = TEST_DURATION;
+            charIndex = 0;
+            mistakes = 0;
+            isStarted = false;
+            
+            inputField.disabled = false;
+            inputField.value = "";
+            timerEl.innerText = TEST_DURATION + "s";
+            wpmEl.innerText = "0";
+            accuracyEl.innerText = "0%";
+            resultsOverlay.style.display = 'none';
+            focusInput();
+        }
+
+        // Prevent Copy-Paste
+        inputField.addEventListener('paste', e => e.preventDefault());
+
+        // Event Listeners
+        inputField.addEventListener('input', handleInput);
+        document.addEventListener('keydown', () => focusInput());
+
+        // Initialize on load
+        window.onload = loadParagraph;
+    </script>
+</body>
+</html>
